@@ -66,6 +66,7 @@ python3 app.py
 - The code editor is currently optimized for desktop view
 - Mobile-responsive design update is in progress
 - Please do not open issues related to mobile responsiveness at this time
+- IOS will sometimes close ish shell when it is running the scrip causing it to not work as intended. Update/workaround coming as soon as the code editor is updated.
 
 ## 📋 Requirements
 
