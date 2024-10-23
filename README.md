@@ -79,7 +79,7 @@ Contributions are welcome! Feel free to submit pull requests for improvements.
 
 ## 📄 License
 
-[Insert License Information Here]
+[Insert License Information Here] - In case this is unclear, I have not yet decided on a license. I'll get arund to it when I deal with the frontend.
 
 ---
 Made with ❤️ for iOS Python developers
