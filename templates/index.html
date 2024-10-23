@@ -1,184 +1,261 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Python Editor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
-    <style>
-        body {
-            margin: 0;
-            background: #1e1e1e;
-            color: #fff;
-            font-family: 'Arial', sans-serif;
-        }
-        #editor { 
-            width: 100%;
-            height: 70vh;
-        }
-        .controls {
-            padding: 10px;
-            background: #2d2d2d;
-        }
-        button {
-            background: #3c3c3c;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        button:hover {
-            background: #4c4c4c;
-        }
-        .terminal {
-            height: 25vh;
-            background: #1a1a1a;
-            color: #fff;
-            padding: 10px;
-            font-family: monospace;
-            overflow-y: auto;
-            display: none;
-        }
-        #terminal-input {
-            width: 100%;
-            background: #1a1a1a;
-            color: #fff;
-            border: none;
-            padding: 5px;
-            font-family: monospace;
-        }
-        #terminal-input:focus {
-            outline: none;
-        }
-        .output-line {
-            padding: 2px 0;
-            word-wrap: break-word;
-        }
-        .save-status {
-            position: fixed;
-            right: 20px;
-            top: 15px;
-            color: #888;
-            font-size: 13px;
-        }
-    </style>
+   <title>Python Editor</title>
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
+   <style>
+       body {
+           margin: 0;
+           background: #1e1e1e;
+           color: #fff;
+           font-family: 'Arial', sans-serif;
+           height: 100vh;
+           width: 100vw;
+           position: fixed;
+           overflow: hidden;
+       }
+       #editor { 
+           width: 100%;
+           height: 70vh;
+           font-size: 16px;
+       }
+       .controls {
+           padding: 10px;
+           background: #2d2d2d;
+           display: flex;
+           align-items: center;
+           flex-wrap: wrap;
+           gap: 8px;
+       }
+       button {
+           background: #3c3c3c;
+           color: white;
+           border: none;
+           padding: 12px 20px;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 16px;
+           min-width: 80px;
+           touch-action: manipulation;
+           -webkit-tap-highlight-color: transparent;
+       }
+       button:active {
+           background: #4c4c4c;
+           transform: scale(0.98);
+       }
+       .terminal {
+           height: 25vh;
+           background: #1a1a1a;
+           color: #fff;
+           padding: 10px;
+           font-family: monospace;
+           overflow-y: auto;
+           -webkit-overflow-scrolling: touch;
+           display: none;
+           font-size: 16px;
+       }
+       #terminal-input {
+           width: 100%;
+           background: #1a1a1a;
+           color: #fff;
+           border: none;
+           padding: 12px 5px;
+           font-family: monospace;
+           font-size: 16px;
+           margin-top: 8px;
+       }
+       #terminal-input:focus {
+           outline: none;
+       }
+       .output-line {
+           padding: 4px 0;
+           word-wrap: break-word;
+           line-height: 1.4;
+       }
+       .save-status {
+           position: fixed;
+           right: 20px;
+           top: 15px;
+           color: #888;
+           font-size: 14px;
+       }
+       @media (max-width: 600px) {
+           #editor {
+               height: 60vh;
+           }
+           .terminal {
+               height: 35vh;
+           }
+           .controls {
+               padding: 8px;
+           }
+           button {
+               flex: 1;
+               min-width: 120px;
+               margin: 0;
+           }
+           .save-status {
+               position: static;
+               flex: 1 0 100%;
+               text-align: center;
+               order: -1;
+           }
+       }
+       /* Prevent zoom on iOS */
+       @supports (-webkit-touch-callout: none) {
+           input, textarea {
+               font-size: 16px;
+           }
+       }
+   </style>
 </head>
 <body>
-    <div class="controls">
-        <button onclick="runCode()">▶ Run</button>
-        <button onclick="toggleTerminal()">📝 Terminal</button>
-        <span class="save-status" id="saveStatus"></span>
-    </div>
-    <div id="editor"></div>
-    <div id="terminal" class="terminal">
-        <div id="terminal-output"></div>
-        <input type="text" id="terminal-input" placeholder="Enter command...">
-    </div>
+   <div class="controls">
+       <button onclick="runCode()">▶ Run</button>
+       <button onclick="toggleTerminal()">📝 Terminal</button>
+       <span class="save-status" id="saveStatus"></span>
+   </div>
+   <div id="editor"></div>
+   <div id="terminal" class="terminal">
+       <div id="terminal-output"></div>
+       <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="none">
+   </div>
 
-    <script>
-        let editor = ace.edit("editor");
-        editor.setTheme("ace/theme/monokai");
-        editor.session.setMode("ace/mode/python");
-        editor.setOptions({
-            fontSize: "14px",
-            showPrintMargin: false,
-            enableBasicAutocompletion: true,
-            enableLiveAutocompletion: true,
-            enableSnippets: true
-        });
+   <script>
+       let editor = ace.edit("editor");
+       editor.setTheme("ace/theme/monokai");
+       editor.session.setMode("ace/mode/python");
+       editor.setOptions({
+           fontSize: "16px",
+           showPrintMargin: false,
+           enableBasicAutocompletion: true,
+           enableLiveAutocompletion: true,
+           enableSnippets: true,
+           displayIndentGuides: true,
+           showGutter: true,
+           highlightActiveLine: true,
+           showInvisibles: false,
+           useSoftTabs: true,
+           tabSize: 4
+       });
 
-        // Load content immediately when page loads
-        async function loadContent() {
-            try {
-                const response = await fetch('/load');
-                if (!response.ok) {
-                    throw new Error('Failed to load file');
-                }
-                const content = await response.text();
-                editor.setValue(content, -1);
-                lastSavedContent = content;
-            } catch (error) {
-                console.error('Failed to load content:', error);
-                document.getElementById('saveStatus').textContent = 'Failed to load file!';
-            }
-        }
-        
-        // Load content as soon as the page loads
-        loadContent();
+       // Prevent elastic scrolling on iOS
+       document.addEventListener('touchmove', function(e) {
+           e.preventDefault();
+       }, { passive: false });
 
-        let saveTimeout;
-        let lastSavedContent = '';
+       async function loadContent() {
+           try {
+               const response = await fetch('/load');
+               if (!response.ok) {
+                   throw new Error('Failed to load file');
+               }
+               const content = await response.text();
+               editor.setValue(content, -1);
+               lastSavedContent = content;
+               editor.clearSelection();
+           } catch (error) {
+               console.error('Failed to load content:', error);
+               document.getElementById('saveStatus').textContent = 'Failed to load file!';
+           }
+       }
+       
+       loadContent();
 
-        async function saveContent() {
-            const currentContent = editor.getValue();
-            if (currentContent !== lastSavedContent) {
-                try {
-                    const response = await fetch('/save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: currentContent })
-                    });
-                    
-                    if (response.ok) {
-                        lastSavedContent = currentContent;
-                        document.getElementById('saveStatus').textContent = 'Saved';
-                        setTimeout(() => {
-                            document.getElementById('saveStatus').textContent = '';
-                        }, 2000);
-                    } else {
-                        throw new Error('Save failed');
-                    }
-                } catch (error) {
-                    console.error('Failed to save:', error);
-                    document.getElementById('saveStatus').textContent = 'Save failed!';
-                }
-            }
-        }
+       let saveTimeout;
+       let lastSavedContent = '';
 
-        editor.session.on('change', () => {
-            document.getElementById('saveStatus').textContent = 'Unsaved changes...';
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveContent, 5000);
-        });
+       async function saveContent() {
+           const currentContent = editor.getValue();
+           if (currentContent !== lastSavedContent) {
+               try {
+                   const response = await fetch('/save', {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ code: currentContent })
+                   });
+                   
+                   if (response.ok) {
+                       lastSavedContent = currentContent;
+                       document.getElementById('saveStatus').textContent = 'Saved';
+                       setTimeout(() => {
+                           document.getElementById('saveStatus').textContent = '';
+                       }, 2000);
+                   } else {
+                       throw new Error('Save failed');
+                   }
+               } catch (error) {
+                   console.error('Failed to save:', error);
+                   document.getElementById('saveStatus').textContent = 'Save failed!';
+               }
+           }
+       }
 
-        async function runCode() {
-            await saveContent(); // Ensure latest code is saved before running
-            const response = await fetch('/run', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: editor.getValue() })
-            });
-            const output = await response.text();
-            document.getElementById('terminal').style.display = 'block';
-            document.getElementById('terminal-output').innerHTML += 
-                `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-        }
+       editor.session.on('change', () => {
+           document.getElementById('saveStatus').textContent = 'Unsaved changes...';
+           clearTimeout(saveTimeout);
+           saveTimeout = setTimeout(saveContent, 5000);
+       });
 
-        async function sendTerminalCommand(cmd) {
-            const response = await fetch('/terminal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: cmd })
-            });
-            const output = await response.text();
-            document.getElementById('terminal-output').innerHTML += 
-                `<div class="output-line">> ${cmd}</div>` +
-                `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-        }
+       async function runCode() {
+           await saveContent();
+           const response = await fetch('/run', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ code: editor.getValue() })
+           });
+           const output = await response.text();
+           document.getElementById('terminal').style.display = 'block';
+           const terminalOutput = document.getElementById('terminal-output');
+           terminalOutput.innerHTML += `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
+           terminalOutput.scrollTop = terminalOutput.scrollHeight;
+       }
 
-        function toggleTerminal() {
-            const terminal = document.getElementById('terminal');
-            terminal.style.display = terminal.style.display === 'none' ? 'block' : 'none';
-        }
+       async function sendTerminalCommand(cmd) {
+           const response = await fetch('/terminal', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ command: cmd })
+           });
+           const output = await response.text();
+           const terminalOutput = document.getElementById('terminal-output');
+           terminalOutput.innerHTML += 
+               `<div class="output-line">> ${cmd}</div>` +
+               `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
+           terminalOutput.scrollTop = terminalOutput.scrollHeight;
+       }
 
-        document.getElementById('terminal-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const cmd = this.value;
-                sendTerminalCommand(cmd);
-                this.value = '';
-            }
-        });
-    </script>
+       function toggleTerminal() {
+           const terminal = document.getElementById('terminal');
+           terminal.style.display = terminal.style.display === 'none' ? 'block' : 'none';
+           if (terminal.style.display === 'block') {
+               document.getElementById('terminal-input').focus();
+           }
+       }
+
+       document.getElementById('terminal-input').addEventListener('keypress', function(e) {
+           if (e.key === 'Enter') {
+               const cmd = this.value;
+               if (cmd.trim()) {
+                   sendTerminalCommand(cmd);
+                   this.value = '';
+               }
+           }
+       });
+
+       // Handle keyboard shortcuts
+       document.addEventListener('keydown', function(e) {
+           if (e.ctrlKey || e.metaKey) {
+               if (e.key === 's') {
+                   e.preventDefault();
+                   saveContent();
+               } else if (e.key === 'Enter') {
+                   e.preventDefault();
+                   runCode();
+               }
+           }
+       });
+   </script>
 </body>
 </html>
