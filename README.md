@@ -59,7 +59,7 @@ cd CodePythonOnIos
 python3 app.py
 ```
 
-3. Open your preferred browser and visit `localhost` to access the web-based Python editor
+3. Open your preferred browser and visit localhost, url and port should be outputted to your shell, if not try [this](http://127.0.0.1:5000) which is the default url of `http://127.0.0.1:5000` to access the web-based Python editor
 
 ## ⚠️ Known Issues
 
