@@ -55,20 +55,21 @@
 
         .terminal-container {
             position: fixed;
-            top: 100%;
+            top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             background: #000;
             z-index: 1000;
+            transform: translateY(100%);
             transition: transform 0.3s ease-out;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100%;
         }
 
         .terminal-container.active {
-            transform: translateY(-100%);
+            transform: translateY(0);
         }
 
         .terminal-header {
@@ -104,6 +105,7 @@
             background: #000;
             color: #33ff33;
             position: relative;
+            -webkit-overflow-scrolling: touch;
         }
 
         .current-line {
@@ -188,6 +190,12 @@
                 flex: 1;
                 min-width: 0;
                 padding: 12px 8px;
+            }
+            
+            .terminal-container {
+                position: fixed;
+                height: calc(100% - env(safe-area-inset-top));
+                margin-top: env(safe-area-inset-top);
             }
         }
     </style>
