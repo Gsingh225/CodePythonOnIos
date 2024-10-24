@@ -62,11 +62,9 @@ python3 app.py
 3. Open your preferred browser and visit localhost, url and port should be outputted to your shell, if not try [this](http://127.0.0.1:5000) which is the default url of `http://127.0.0.1:5000` to access the web-based Python editor
 
 ## ⚠️ Known Issues
-
-- The code editor is currently optimized for desktop view
-- Mobile-responsive design update is in progress
-- Please do not open issues related to mobile responsiveness at this time
 - IOS will sometimes close ish shell when it is running the scrip causing it to not work as intended. Update/workaround coming as soon as the code editor is updated.
+- The terminal may not work as a full scale terminal, it is designed for just installing packages using pip until I can expand this project further.
+- On most IOS devices this app was tested on, every time you interact with the web app (run code/enter a terminal command/ visit localhost in the browser, ect) it won't load until you open ish shell and then go back to your web browser. This is lso due to ios's restrictions, the same ones that cause issue #1. Updates/workarounds adressing this issue and issue #1 will be coming soon.
 
 ## 📋 Requirements
 
