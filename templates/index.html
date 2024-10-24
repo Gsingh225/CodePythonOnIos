@@ -35,6 +35,7 @@
             gap: 8px;
             flex-wrap: wrap;
             flex-shrink: 0;
+            z-index: 10;
         }
 
         #editor-container {
@@ -53,40 +54,101 @@
         }
 
         .terminal-container {
-            position: relative;
-            height: 40vh;
-            background: #1a1a1a;
-            display: none;
+            position: fixed;
+            top: 100%;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 1000;
+            transition: transform 0.3s ease-out;
+            display: flex;
             flex-direction: column;
-            border-top: 2px solid #3c3c3c;
+            height: 100vh;
+        }
+
+        .terminal-container.active {
+            transform: translateY(-100%);
+        }
+
+        .terminal-header {
+            background: #1a1a1a;
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .terminal-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .terminal-close {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 4px 8px;
         }
 
         .terminal {
             flex: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
             padding: 10px;
-            font-family: monospace;
-            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
             line-height: 1.4;
+            background: #000;
+            color: #33ff33;
+            position: relative;
         }
 
-        .terminal-input-container {
+        .current-line {
             display: flex;
-            padding: 8px;
-            background: #1a1a1a;
-            border-top: 1px solid #333;
+            white-space: pre;
         }
 
-        #terminal-input {
-            flex: 1;
-            background: #2d2d2d;
+        .prompt {
+            color: #33ff33;
+            margin-right: 8px;
+        }
+
+        .cursor {
+            width: 8px;
+            height: 15px;
+            background-color: #33ff33;
+            display: inline-block;
+            animation: blink 1s step-end infinite;
+            margin-left: 1px;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            50% { background-color: transparent; }
+        }
+
+        #hidden-input {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+
+        .terminal-line {
+            display: flex;
+            margin: 2px 0;
+        }
+
+        .command {
             color: #fff;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-family: monospace;
-            font-size: 16px;
+        }
+
+        .output {
+            color: #bcbcbc;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         button {
@@ -111,23 +173,10 @@
             transform: scale(0.98);
         }
 
-        .output-line {
-            padding: 4px 0;
-            word-wrap: break-word;
-        }
-
         .save-status {
             color: #888;
             font-size: 14px;
             padding: 4px 8px;
-        }
-
-        .resize-handle {
-            width: 100%;
-            height: 6px;
-            background: #2d2d2d;
-            cursor: row-resize;
-            touch-action: none;
         }
 
         @media (max-width: 600px) {
@@ -139,16 +188,6 @@
                 flex: 1;
                 min-width: 0;
                 padding: 12px 8px;
-            }
-
-            .terminal-container {
-                height: 50vh;
-            }
-        }
-
-        @media (max-height: 500px) {
-            .terminal-container {
-                height: 60vh;
             }
         }
     </style>
@@ -164,12 +203,18 @@
             <div id="editor"></div>
         </div>
         <div class="terminal-container" id="terminal-container">
-            <div class="resize-handle" id="resize-handle"></div>
-            <div class="terminal" id="terminal">
-                <div id="terminal-output"></div>
+            <div class="terminal-header">
+                <span class="terminal-title">Terminal</span>
+                <button class="terminal-close" onclick="toggleTerminal()">×</button>
             </div>
-            <div class="terminal-input-container">
-                <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="none">
+            <div class="terminal" id="terminal" onclick="focusHiddenInput()">
+                <div id="terminal-output"></div>
+                <div class="current-line">
+                    <span class="prompt">$ </span>
+                    <span id="current-text"></span>
+                    <span class="cursor"></span>
+                </div>
+                <input type="text" id="hidden-input" autocomplete="off" autocapitalize="off">
             </div>
         </div>
     </div>
@@ -195,38 +240,102 @@
         let lastSavedContent = '';
         let saveTimeout;
         let terminalVisible = false;
-        let startY, startHeight;
+        let commandHistory = [];
+        let historyIndex = -1;
+        let currentInput = '';
 
-        // Terminal resize functionality
-        const resizeHandle = document.getElementById('resize-handle');
+        const terminal = document.getElementById('terminal');
+        const terminalOutput = document.getElementById('terminal-output');
         const terminalContainer = document.getElementById('terminal-container');
+        const hiddenInput = document.getElementById('hidden-input');
+        const currentText = document.getElementById('current-text');
 
-        function initResize(e) {
-            startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
-            startHeight = parseInt(document.defaultView.getComputedStyle(terminalContainer).height, 10);
+        function focusHiddenInput() {
+            hiddenInput.focus();
+        }
+
+        function updateCurrentLine() {
+            currentText.textContent = currentInput;
+        }
+
+        function addTerminalLine(content, type = 'output') {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
             
-            document.documentElement.addEventListener('mousemove', resize);
-            document.documentElement.addEventListener('mouseup', stopResize);
-            document.documentElement.addEventListener('touchmove', resize);
-            document.documentElement.addEventListener('touchend', stopResize);
+            if (type === 'command') {
+                line.innerHTML = `<span class="prompt">$ </span><span class="command">${content}</span>`;
+            } else {
+                line.innerHTML = `<span class="output">${content}</span>`;
+            }
+            
+            terminalOutput.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
         }
 
-        function resize(e) {
-            const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
-            const diff = startY - currentY;
-            const newHeight = Math.max(100, Math.min(startHeight + diff, window.innerHeight * 0.8));
-            terminalContainer.style.height = newHeight + 'px';
+        function processTerminalInput(input) {
+            if (input.trim()) {
+                commandHistory.push(input);
+                historyIndex = commandHistory.length;
+                addTerminalLine(input, 'command');
+                
+                fetch('/terminal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: input })
+                })
+                .then(response => response.text())
+                .then(output => {
+                    if (output) {
+                        addTerminalLine(output);
+                    }
+                })
+                .catch(error => {
+                    addTerminalLine('Error: ' + error.message);
+                });
+            }
+            currentInput = '';
+            updateCurrentLine();
         }
 
-        function stopResize() {
-            document.documentElement.removeEventListener('mousemove', resize);
-            document.documentElement.removeEventListener('mouseup', stopResize);
-            document.documentElement.removeEventListener('touchmove', resize);
-            document.documentElement.removeEventListener('touchend', stopResize);
-        }
+        hiddenInput.addEventListener('input', function(e) {
+            currentInput = this.value;
+            updateCurrentLine();
+        });
 
-        resizeHandle.addEventListener('mousedown', initResize);
-        resizeHandle.addEventListener('touchstart', initResize);
+        hiddenInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processTerminalInput(currentInput);
+                this.value = '';
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    currentInput = commandHistory[historyIndex];
+                    this.value = currentInput;
+                    updateCurrentLine();
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    currentInput = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    currentInput = '';
+                }
+                this.value = currentInput;
+                updateCurrentLine();
+            }
+        });
+
+        function toggleTerminal() {
+            terminalVisible = !terminalVisible;
+            terminalContainer.classList.toggle('active');
+            if (terminalVisible) {
+                setTimeout(focusHiddenInput, 300);
+            }
+        }
 
         async function loadContent() {
             try {
@@ -271,37 +380,18 @@
         async function runCode() {
             await saveContent();
             if (!terminalVisible) toggleTerminal();
-            const response = await fetch('/run', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: editor.getValue() })
-            });
-            const output = await response.text();
-            const terminalOutput = document.getElementById('terminal-output');
-            terminalOutput.innerHTML += `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        async function sendTerminalCommand(cmd) {
-            const response = await fetch('/terminal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: cmd })
-            });
-            const output = await response.text();
-            const terminalOutput = document.getElementById('terminal-output');
-            terminalOutput.innerHTML += 
-                `<div class="output-line">> ${cmd}</div>` +
-                `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        function toggleTerminal() {
-            terminalVisible = !terminalVisible;
-            const container = document.getElementById('terminal-container');
-            container.style.display = terminalVisible ? 'flex' : 'none';
-            if (terminalVisible) {
-                document.getElementById('terminal-input').focus();
+            addTerminalLine('Running code...', 'command');
+            
+            try {
+                const response = await fetch('/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: editor.getValue() })
+                });
+                const output = await response.text();
+                addTerminalLine(output);
+            } catch (error) {
+                addTerminalLine('Error: ' + error.message);
             }
         }
 
@@ -309,16 +399,6 @@
             document.getElementById('saveStatus').textContent = 'Unsaved changes...';
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveContent, 2000);
-        });
-
-        document.getElementById('terminal-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const cmd = this.value;
-                if (cmd.trim()) {
-                    sendTerminalCommand(cmd);
-                    this.value = '';
-                }
-            }
         });
 
         document.addEventListener('keydown', function(e) {
@@ -334,6 +414,15 @@
         });
 
         loadContent();
+        addTerminalLine('Terminal ready. Type commands here...', 'output');
+
+        // Keep terminal focused
+        terminal.addEventListener('click', focusHiddenInput);
+        document.addEventListener('keydown', function(e) {
+            if (terminalVisible && !hiddenInput.matches(':focus')) {
+                focusHiddenInput();
+            }
+        });
     </script>
 </body>
 </html>
