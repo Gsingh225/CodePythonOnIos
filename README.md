@@ -64,7 +64,7 @@ python3 app.py
 ## ⚠️ Known Issues
 - IOS will sometimes close ish shell when it is running the scrip causing it to not work as intended. Update/workaround coming as soon as the code editor is updated.
 - The terminal may not work as a full scale terminal, it is designed for just installing packages using pip until I can expand this project further.
-- On most IOS devices this app was tested on, every time you interact with the web app (run code/enter a terminal command/ visit localhost in the browser, ect) it won't load until you open ish shell and then go back to your web browser. This is lso due to ios's restrictions, the same ones that cause issue #1. Updates/workarounds adressing this issue and issue #1 will be coming soon.
+- On most IOS devices this app was tested on, every time you interact with the web app (run code/enter a terminal command/ visit localhost in the browser, ect) it won't load until you open ish shell and then go back to your web browser. This is also due to ios's restrictions, the same ones that cause issue #1. Updates/workarounds adressing this issue and issue #1 will be coming soon.
 
 ## 📋 Requirements
 
