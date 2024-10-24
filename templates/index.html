@@ -1,261 +1,339 @@
 <!DOCTYPE html>
 <html>
 <head>
-   <title>Python Editor</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
-   <style>
-       body {
-           margin: 0;
-           background: #1e1e1e;
-           color: #fff;
-           font-family: 'Arial', sans-serif;
-           height: 100vh;
-           width: 100vw;
-           position: fixed;
-           overflow: hidden;
-       }
-       #editor { 
-           width: 100%;
-           height: 70vh;
-           font-size: 16px;
-       }
-       .controls {
-           padding: 10px;
-           background: #2d2d2d;
-           display: flex;
-           align-items: center;
-           flex-wrap: wrap;
-           gap: 8px;
-       }
-       button {
-           background: #3c3c3c;
-           color: white;
-           border: none;
-           padding: 12px 20px;
-           border-radius: 4px;
-           cursor: pointer;
-           font-size: 16px;
-           min-width: 80px;
-           touch-action: manipulation;
-           -webkit-tap-highlight-color: transparent;
-       }
-       button:active {
-           background: #4c4c4c;
-           transform: scale(0.98);
-       }
-       .terminal {
-           height: 25vh;
-           background: #1a1a1a;
-           color: #fff;
-           padding: 10px;
-           font-family: monospace;
-           overflow-y: auto;
-           -webkit-overflow-scrolling: touch;
-           display: none;
-           font-size: 16px;
-       }
-       #terminal-input {
-           width: 100%;
-           background: #1a1a1a;
-           color: #fff;
-           border: none;
-           padding: 12px 5px;
-           font-family: monospace;
-           font-size: 16px;
-           margin-top: 8px;
-       }
-       #terminal-input:focus {
-           outline: none;
-       }
-       .output-line {
-           padding: 4px 0;
-           word-wrap: break-word;
-           line-height: 1.4;
-       }
-       .save-status {
-           position: fixed;
-           right: 20px;
-           top: 15px;
-           color: #888;
-           font-size: 14px;
-       }
-       @media (max-width: 600px) {
-           #editor {
-               height: 60vh;
-           }
-           .terminal {
-               height: 35vh;
-           }
-           .controls {
-               padding: 8px;
-           }
-           button {
-               flex: 1;
-               min-width: 120px;
-               margin: 0;
-           }
-           .save-status {
-               position: static;
-               flex: 1 0 100%;
-               text-align: center;
-               order: -1;
-           }
-       }
-       /* Prevent zoom on iOS */
-       @supports (-webkit-touch-callout: none) {
-           input, textarea {
-               font-size: 16px;
-           }
-       }
-   </style>
+    <title>Python Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #1e1e1e;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .controls {
+            padding: 8px;
+            background: #2d2d2d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        #editor-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        #editor {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            font-size: 16px;
+        }
+
+        .terminal-container {
+            position: relative;
+            height: 40vh;
+            background: #1a1a1a;
+            display: none;
+            flex-direction: column;
+            border-top: 2px solid #3c3c3c;
+        }
+
+        .terminal {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .terminal-input-container {
+            display: flex;
+            padding: 8px;
+            background: #1a1a1a;
+            border-top: 1px solid #333;
+        }
+
+        #terminal-input {
+            flex: 1;
+            background: #2d2d2d;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-family: monospace;
+            font-size: 16px;
+        }
+
+        button {
+            background: #3c3c3c;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 70px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        button:active {
+            background: #4c4c4c;
+            transform: scale(0.98);
+        }
+
+        .output-line {
+            padding: 4px 0;
+            word-wrap: break-word;
+        }
+
+        .save-status {
+            color: #888;
+            font-size: 14px;
+            padding: 4px 8px;
+        }
+
+        .resize-handle {
+            width: 100%;
+            height: 6px;
+            background: #2d2d2d;
+            cursor: row-resize;
+            touch-action: none;
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                padding: 6px;
+            }
+
+            button {
+                flex: 1;
+                min-width: 0;
+                padding: 12px 8px;
+            }
+
+            .terminal-container {
+                height: 50vh;
+            }
+        }
+
+        @media (max-height: 500px) {
+            .terminal-container {
+                height: 60vh;
+            }
+        }
+    </style>
 </head>
 <body>
-   <div class="controls">
-       <button onclick="runCode()">▶ Run</button>
-       <button onclick="toggleTerminal()">📝 Terminal</button>
-       <span class="save-status" id="saveStatus"></span>
-   </div>
-   <div id="editor"></div>
-   <div id="terminal" class="terminal">
-       <div id="terminal-output"></div>
-       <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="none">
-   </div>
+    <div class="container">
+        <div class="controls">
+            <button onclick="runCode()">▶ Run</button>
+            <button onclick="toggleTerminal()">📝 Terminal</button>
+            <span class="save-status" id="saveStatus"></span>
+        </div>
+        <div id="editor-container">
+            <div id="editor"></div>
+        </div>
+        <div class="terminal-container" id="terminal-container">
+            <div class="resize-handle" id="resize-handle"></div>
+            <div class="terminal" id="terminal">
+                <div id="terminal-output"></div>
+            </div>
+            <div class="terminal-input-container">
+                <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="none">
+            </div>
+        </div>
+    </div>
 
-   <script>
-       let editor = ace.edit("editor");
-       editor.setTheme("ace/theme/monokai");
-       editor.session.setMode("ace/mode/python");
-       editor.setOptions({
-           fontSize: "16px",
-           showPrintMargin: false,
-           enableBasicAutocompletion: true,
-           enableLiveAutocompletion: true,
-           enableSnippets: true,
-           displayIndentGuides: true,
-           showGutter: true,
-           highlightActiveLine: true,
-           showInvisibles: false,
-           useSoftTabs: true,
-           tabSize: 4
-       });
+    <script>
+        let editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/python");
+        editor.setOptions({
+            fontSize: "16px",
+            showPrintMargin: false,
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            enableSnippets: true,
+            displayIndentGuides: true,
+            showGutter: true,
+            highlightActiveLine: true,
+            showInvisibles: false,
+            useSoftTabs: true,
+            tabSize: 4
+        });
 
-       // Prevent elastic scrolling on iOS
-       document.addEventListener('touchmove', function(e) {
-           e.preventDefault();
-       }, { passive: false });
+        let lastSavedContent = '';
+        let saveTimeout;
+        let terminalVisible = false;
+        let startY, startHeight;
 
-       async function loadContent() {
-           try {
-               const response = await fetch('/load');
-               if (!response.ok) {
-                   throw new Error('Failed to load file');
-               }
-               const content = await response.text();
-               editor.setValue(content, -1);
-               lastSavedContent = content;
-               editor.clearSelection();
-           } catch (error) {
-               console.error('Failed to load content:', error);
-               document.getElementById('saveStatus').textContent = 'Failed to load file!';
-           }
-       }
-       
-       loadContent();
+        // Terminal resize functionality
+        const resizeHandle = document.getElementById('resize-handle');
+        const terminalContainer = document.getElementById('terminal-container');
 
-       let saveTimeout;
-       let lastSavedContent = '';
+        function initResize(e) {
+            startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+            startHeight = parseInt(document.defaultView.getComputedStyle(terminalContainer).height, 10);
+            
+            document.documentElement.addEventListener('mousemove', resize);
+            document.documentElement.addEventListener('mouseup', stopResize);
+            document.documentElement.addEventListener('touchmove', resize);
+            document.documentElement.addEventListener('touchend', stopResize);
+        }
 
-       async function saveContent() {
-           const currentContent = editor.getValue();
-           if (currentContent !== lastSavedContent) {
-               try {
-                   const response = await fetch('/save', {
-                       method: 'POST',
-                       headers: { 'Content-Type': 'application/json' },
-                       body: JSON.stringify({ code: currentContent })
-                   });
-                   
-                   if (response.ok) {
-                       lastSavedContent = currentContent;
-                       document.getElementById('saveStatus').textContent = 'Saved';
-                       setTimeout(() => {
-                           document.getElementById('saveStatus').textContent = '';
-                       }, 2000);
-                   } else {
-                       throw new Error('Save failed');
-                   }
-               } catch (error) {
-                   console.error('Failed to save:', error);
-                   document.getElementById('saveStatus').textContent = 'Save failed!';
-               }
-           }
-       }
+        function resize(e) {
+            const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+            const diff = startY - currentY;
+            const newHeight = Math.max(100, Math.min(startHeight + diff, window.innerHeight * 0.8));
+            terminalContainer.style.height = newHeight + 'px';
+        }
 
-       editor.session.on('change', () => {
-           document.getElementById('saveStatus').textContent = 'Unsaved changes...';
-           clearTimeout(saveTimeout);
-           saveTimeout = setTimeout(saveContent, 5000);
-       });
+        function stopResize() {
+            document.documentElement.removeEventListener('mousemove', resize);
+            document.documentElement.removeEventListener('mouseup', stopResize);
+            document.documentElement.removeEventListener('touchmove', resize);
+            document.documentElement.removeEventListener('touchend', stopResize);
+        }
 
-       async function runCode() {
-           await saveContent();
-           const response = await fetch('/run', {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ code: editor.getValue() })
-           });
-           const output = await response.text();
-           document.getElementById('terminal').style.display = 'block';
-           const terminalOutput = document.getElementById('terminal-output');
-           terminalOutput.innerHTML += `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-           terminalOutput.scrollTop = terminalOutput.scrollHeight;
-       }
+        resizeHandle.addEventListener('mousedown', initResize);
+        resizeHandle.addEventListener('touchstart', initResize);
 
-       async function sendTerminalCommand(cmd) {
-           const response = await fetch('/terminal', {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ command: cmd })
-           });
-           const output = await response.text();
-           const terminalOutput = document.getElementById('terminal-output');
-           terminalOutput.innerHTML += 
-               `<div class="output-line">> ${cmd}</div>` +
-               `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
-           terminalOutput.scrollTop = terminalOutput.scrollHeight;
-       }
+        async function loadContent() {
+            try {
+                const response = await fetch('/load');
+                if (!response.ok) throw new Error('Failed to load file');
+                const content = await response.text();
+                editor.setValue(content, -1);
+                lastSavedContent = content;
+                editor.clearSelection();
+            } catch (error) {
+                console.error('Failed to load content:', error);
+                document.getElementById('saveStatus').textContent = 'Failed to load file!';
+            }
+        }
 
-       function toggleTerminal() {
-           const terminal = document.getElementById('terminal');
-           terminal.style.display = terminal.style.display === 'none' ? 'block' : 'none';
-           if (terminal.style.display === 'block') {
-               document.getElementById('terminal-input').focus();
-           }
-       }
+        async function saveContent() {
+            const currentContent = editor.getValue();
+            if (currentContent !== lastSavedContent) {
+                try {
+                    const response = await fetch('/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: currentContent })
+                    });
+                    
+                    if (response.ok) {
+                        lastSavedContent = currentContent;
+                        document.getElementById('saveStatus').textContent = 'Saved';
+                        setTimeout(() => {
+                            document.getElementById('saveStatus').textContent = '';
+                        }, 2000);
+                    } else {
+                        throw new Error('Save failed');
+                    }
+                } catch (error) {
+                    console.error('Failed to save:', error);
+                    document.getElementById('saveStatus').textContent = 'Save failed!';
+                }
+            }
+        }
 
-       document.getElementById('terminal-input').addEventListener('keypress', function(e) {
-           if (e.key === 'Enter') {
-               const cmd = this.value;
-               if (cmd.trim()) {
-                   sendTerminalCommand(cmd);
-                   this.value = '';
-               }
-           }
-       });
+        async function runCode() {
+            await saveContent();
+            if (!terminalVisible) toggleTerminal();
+            const response = await fetch('/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: editor.getValue() })
+            });
+            const output = await response.text();
+            const terminalOutput = document.getElementById('terminal-output');
+            terminalOutput.innerHTML += `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
 
-       // Handle keyboard shortcuts
-       document.addEventListener('keydown', function(e) {
-           if (e.ctrlKey || e.metaKey) {
-               if (e.key === 's') {
-                   e.preventDefault();
-                   saveContent();
-               } else if (e.key === 'Enter') {
-                   e.preventDefault();
-                   runCode();
-               }
-           }
-       });
-   </script>
+        async function sendTerminalCommand(cmd) {
+            const response = await fetch('/terminal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
+            });
+            const output = await response.text();
+            const terminalOutput = document.getElementById('terminal-output');
+            terminalOutput.innerHTML += 
+                `<div class="output-line">> ${cmd}</div>` +
+                `<div class="output-line">${output.replace(/\n/g, '<br>')}</div>`;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function toggleTerminal() {
+            terminalVisible = !terminalVisible;
+            const container = document.getElementById('terminal-container');
+            container.style.display = terminalVisible ? 'flex' : 'none';
+            if (terminalVisible) {
+                document.getElementById('terminal-input').focus();
+            }
+        }
+
+        editor.session.on('change', () => {
+            document.getElementById('saveStatus').textContent = 'Unsaved changes...';
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveContent, 2000);
+        });
+
+        document.getElementById('terminal-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const cmd = this.value;
+                if (cmd.trim()) {
+                    sendTerminalCommand(cmd);
+                    this.value = '';
+                }
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's') {
+                    e.preventDefault();
+                    saveContent();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    runCode();
+                }
+            }
+        });
+
+        loadContent();
+    </script>
 </body>
 </html>
